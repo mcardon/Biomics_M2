@@ -1,0 +1,463 @@
+# -*- coding: utf-8 -*-
+# arg1 : file of filenames : vcf files (from smrt : names will look better if : 'output_NN.vcf' where NN is the name of analysis)
+# arg2 : file illumina (csv format)
+# arg3 : shustring_file.out
+# arg4 : filename for figure (if 'show', don't save but show instead)
+
+# Only one file is allowed for illumina
+# shustring file is the output of shustring tool 
+
+################################ IMPORT ################################################################################################
+
+from sequana.lazy import pylab
+from sequana.lazy import numpy as np
+from sequana.lazy import pandas as pd
+import collections
+import sys
+
+################################ PARAMETERS ##############################################################################################
+
+
+file_of_filenames = str(sys.argv[1])
+file_illumina = str(sys.argv[2])
+file_shustring = str(sys.argv[3])
+file_fig = str(sys.argv[4])
+
+# threshold for repeat length
+threshold = 100
+
+################################ FUNCTIONS ################################################################################################
+
+
+def step_repeat_len(df_shustring, threshold):
+	"""
+	Convert repetitivity curve into step curve with repeat len
+	returns begining and end as list of tuples
+	"""
+
+	nb_row = df_shustring.shape[0]
+	i = 0
+	step_repeat_seq = []
+	be_repeats = []
+	e = 0
+
+	# use list because much faster
+	list_len_shus = list(df_shustring.iloc[:,1])
+
+	while(i < nb_row):
+		# begining of repeat
+		if (list_len_shus[i] > threshold):
+			b = i
+			#print(b)
+			# add 0 for non repeat area
+			step_repeat_seq = step_repeat_seq + [0 for j in range(e,b,1)]
+			# compute new end of repeat
+			len_repeat = list_len_shus[i]
+			e = b + len_repeat
+			# add len of repeat for all repeat area
+			step_repeat_seq = step_repeat_seq + [len_repeat for j in range(b,e,1)]
+			# save (b,e)
+			be_repeats.append((b,e))
+			# update i
+			i = e-1
+		i +=1
+
+	step_repeat_seq = step_repeat_seq + [0 for j in range(e,i,1)]
+
+	# merge repeats that are fragmented
+	prev_tup = be_repeats[0]
+	b = prev_tup[0]
+	be_repeats_concat = []
+	for tup in be_repeats[1:len(be_repeats)]:
+		if tup[0] == prev_tup[1]:
+			# concat
+			e = tup[1]
+			prev_tup = tup
+		else:
+			# real end of repeat : append result and update b, e
+			e = prev_tup[1]
+			be_repeats_concat.append((b,e))
+			prev_tup = tup
+			b = prev_tup[0]
+
+	return step_repeat_seq, be_repeats_concat
+
+
+def convert_illumina_indel(small_seq, large_seq, indel):
+	"""
+	Converts insertion notation from variant calling sequana to match notation smrt pacbio
+	"""
+	small_seq = list(small_seq[1:(len(small_seq)-1)])
+	large_seq = list(large_seq[1:(len(large_seq)-1)])
+	while(small_seq):
+		if small_seq[-1] == large_seq[-1]:
+			small_seq.pop()
+			large_seq.pop()
+
+	if indel == 'insert':
+		new_small_seq = '.'
+		new_large_seq = 'I' + ''.join(large_seq)
+	elif indel == 'delete':
+		new_small_seq = 'D' + str(len(large_seq))
+		new_large_seq = ''.join(large_seq)
+
+	return new_small_seq, new_large_seq
+
+
+def compare_results(df_result ,analysis_names,what_to_compare):
+	pacbio_identical = [True]*df_result.shape[0]
+	to_compare = []
+	if what_to_compare == 'pacbio':
+		start = 1
+	else:
+		start = 0
+	for analysis in analysis_names[start:len(analysis_names)]:
+		if list(to_compare):
+			#print(analysis)
+			identical = to_compare == df_result[analysis]
+			pacbio_identical = pacbio_identical & identical
+			to_compare = df_result[analysis]
+		else:
+			to_compare = df_result[analysis]
+	return pacbio_identical
+
+def summary_results(df_analysis, name):
+	print(name, df_analysis.shape)
+	res_to_append = []
+	# analysis name 0
+	res_to_append.append(name)
+	#number of variants found 1
+	res_to_append.append(df_analysis.shape[0])
+	# number outside repeat 2
+	res_to_append.append(df_analysis[df_analysis['size_rep'] == 0].shape[0])
+	# number inside repeat 3
+	df_in_rep = df_analysis[df_analysis['size_rep'] != 0]
+	res_to_append.append(df_in_rep.shape[0])
+	# mean and median rep size 4 5
+	res_to_append.append(df_in_rep['size_rep'].mean())
+	res_to_append.append(df_in_rep['size_rep'].median())
+	# min and max rep size
+	res_to_append.append(df_in_rep['size_rep'].min())
+	res_to_append.append(df_in_rep['size_rep'].max())
+	return res_to_append
+
+
+################################ FUNCTIONS FOR PLOTS #########################################################################################
+
+def find_begin_end_interval(be_repeats_concat, i, i_end):
+	"""
+	Returns list of repeats in given interval
+	"""
+
+	# find begin end of repeats in interval
+	be_repeats_concat_i = [j for j in be_repeats_concat if (((j[0] > i) & (j[0] < i_end)) | ((j[1] > i) & (j[1] < i_end)))]
+
+	# check first and last element, trim edges if necessary
+	if len(be_repeats_concat_i) > 1 :
+		r_first = be_repeats_concat_i.pop(0)
+		r_last = be_repeats_concat_i.pop()
+		be_repeats_concat_i = [( max(r_first[0], i) ,r_first[1])] + be_repeats_concat_i + [(r_last[0], min(r_last[1], i_end ))]
+	elif len(be_repeats_concat_i) == 1:
+		r_last = be_repeats_concat_i.pop()
+		be_repeats_concat_i = [( max(r_last[0],i) , min(r_last[1],i_end) )]
+
+	return be_repeats_concat_i
+
+
+def subplot_variant_position(df_result, i, gen_pos, axarr, analysis_names, y_pos, y_col, be_repeats_concat):
+	ax = axarr[i]
+	pos = gen_pos[i]
+	ax.set_xlim(pos)
+	ax.set_ylim([y_pos[0],y_pos[-1]])
+	df_to_plot = df_result[(df_result['position'] >= pos[0]) & (df_result['position'] <= pos[1]) ]
+	my_xticks = [pos[0]] + list(df_to_plot['position']) + [pos[1]]
+
+	# merge ticks that are too close
+	prev_t = pos[0]
+	to_append = str(prev_t)
+	new_my_xticks = []
+	to_pop = []
+	for j in range(1,len(my_xticks[1:len(my_xticks)]),1):
+		t = my_xticks[j]
+		if abs(t - prev_t) < 1000:
+			to_append = to_append + "\n " + str(t)
+			prev_t = t
+			to_pop.append(j)
+		else:
+			new_my_xticks.append(to_append)
+			prev_t = t
+			to_append = str(prev_t)
+	new_my_xticks.append(to_append)
+
+	ticks_pos = [my_xticks[j] for j in range(len(my_xticks)) if j not in to_pop]
+			
+
+	ax.set_xticks(ticks_pos)
+	ax.set_xticklabels(new_my_xticks, fontsize=8)
+	for j in range(len(analysis_names)):
+		analysis = analysis_names[j]
+		df = df_to_plot.dropna(axis=0, how='all', subset=[analysis])
+		if analysis == 'Illumina':
+			ax.plot(df['position'], [y_pos[j+1]]*df.shape[0], 'ks',markersize=8)
+		else:
+			ax.plot(df['position'], [y_pos[j+1]]*df.shape[0], y_col[j] + 'o')
+	# highlight repeated regions
+
+	be_repeats_concat_i = find_begin_end_interval(be_repeats_concat, gen_pos[0][0], gen_pos[0][1])
+	for rep in be_repeats_concat:
+		ax.axvspan(rep[0], rep[1], alpha=0.5, color='orange')
+
+
+
+################################ INPUT DATA ##############################################################################################
+
+# list of all files
+f = open(file_of_filenames, 'r')
+list_files_smrt = []
+list_df_smrt_names = []
+for name in f.readlines():
+	f_name = name.split('\n')[0]
+	list_files_smrt.append(f_name)
+
+	# save short name (for plots)
+	short_name = f_name.split("/")[-1]
+	list_df_smrt_names.append(short_name)
+f.close()
+
+
+# load all smrt files and set header
+print("\nSMRT files")
+list_df_smrt = []
+
+for f_smrt in list_files_smrt:
+	# import df
+	df_smrt = pd.read_csv(f_smrt,comment='#',header=None,sep="\t")
+
+	# find header
+	f = open(f_smrt, 'r')
+	l = f.readline()
+	while(l):
+		if (l[0] == '#') & (l[1] != '#'):
+			header_df = l.replace('\n','').replace('#','').split('\t')
+			break
+		l = f.readline()
+	f.close()
+	df_smrt.columns = header_df
+
+	# save in list
+	list_df_smrt.append(df_smrt)
+
+
+# load illumina file
+print("\nIllumina file")
+df_illumina = pd.read_csv(file_illumina,sep=",")
+
+print("Shustring file")
+# load shustring file and set header
+df_shustring = pd.read_csv(file_shustring,comment='#',header=None,sep="\s+")
+# find header
+f = open(file_shustring, 'r')
+l = f.readline()
+# first line contains genome length
+len_genome = int(l.split("\t")[1])
+
+while(l):
+	if (l[0] == '#') & (l[1] != '>'):
+		header_df = l.replace('\n','').replace('#','').split('\t')
+		break
+	l = f.readline()
+f.close()
+df_shustring.columns = header_df
+
+
+################################ EXECUTE ##############################################################################################
+
+print("find repeats location")
+# find repeats location
+step_repeat_seq, be_repeats_concat = step_repeat_len(df_shustring, threshold)
+
+# merge data from Illumina and Pacbio smrt
+## annotate before merge
+print("Merge data")
+analysis_names = []
+
+# Illumina
+df_illumina['data_type'] = ['Illumina']*df_illumina.shape[0]
+ref_list = list(df_illumina['reference'].values)
+alt_list = list(df_illumina['alternative'].values)
+tri_del = [len(ref_list[i]) > len(alt_list[i]) for i in range(len(alt_list))]
+df_illumina.loc[tri_del,'position'] =  df_illumina.loc[tri_del,'position']  +1
+
+
+list_df_to_merge = [df_illumina[['position','reference','alternative','data_type']]]
+analysis_names.append('Illumina')
+
+#Pacbio
+for i in range(len(list_df_smrt_names)):
+	df_smrt = list_df_smrt[i]
+	name = list_df_smrt_names[i]
+	name = name.replace('output_','').replace('.vcf','')
+	analysis_names.append('Pacbio_' + name)
+	df_smrt['data_type'] = ['Pacbio_' + name]*df_smrt.shape[0]
+
+	df_to_merge = df_smrt[['POS','REF','ALT','data_type']]
+	df_to_merge.columns = ['position','reference','alternative','data_type']
+
+	list_df_to_merge.append(df_to_merge)
+
+
+concat_variant = pd.concat(list_df_to_merge)
+concat_variant.sort_values(by='position',axis=0,inplace=True)
+
+print("Create results table")
+res_variant_names = ['position'] + analysis_names
+res_variant = []
+pos_indel_illumina_to_remove = [] # deletions are i-1 in sequana variant calling, while i+1 in pacbio data
+
+for i in set(concat_variant['position']):
+	df = concat_variant[concat_variant['position'] == i]
+	# position
+	res = [i]
+	#analysis
+	var_found = set(df['data_type'])
+	for j in analysis_names:
+		if j in var_found:
+			ref = df.loc[df['data_type'] == j, 'reference'].values[0]
+			alt = df.loc[df['data_type'] == j, 'alternative'].values[0]
+			# indel in illumina are different format from pacbio, change to compare
+			if (j == "Illumina") & (len(ref) != len(alt)):
+				if len(ref) > len(alt):
+					alt, ref = convert_illumina_indel(alt, ref, 'delete')
+
+				else:
+					ref, alt = convert_illumina_indel(ref, alt, 'insert')
+
+			res.append(ref + '>' + alt)
+		else:
+			res.append(None)
+
+	# append result
+	res_variant.append(res)
+
+
+df_result = pd.DataFrame(res_variant)
+df_result.columns = res_variant_names
+df_result.sort_values(by='position', axis=0, inplace=True)
+
+
+df_result['identical_pacbio'] = compare_results(df_result ,analysis_names, 'pacbio')
+df_result['identical_all'] = compare_results(df_result ,analysis_names, 'all')
+
+# for each position, check if inside repeat
+be_deque = collections.deque(be_repeats_concat)
+prev_rep_end = 0
+next_rep = be_deque.popleft()
+is_inside_repeat = []
+size_rep = []
+for pos in list(df_result['position']):
+	while not (pos >= prev_rep_end) & (pos <= next_rep[1]):
+		# update deque rep and previous position
+		prev_rep_end = next_rep[1]
+		if be_deque:
+			next_rep = be_deque.popleft()
+		else:
+			#deque is empty, set ed of genome
+			next_rep = (len_genome,len_genome)
+
+	# check if inside rep
+	if pos >= next_rep[0]:
+		is_inside_repeat.append(True)
+		size_rep.append(next_rep[1] - next_rep[0])
+	else:
+		is_inside_repeat.append(False)
+		size_rep.append(0)
+# append result to df
+df_result['is_inside_repeat_' +str(threshold)] = is_inside_repeat
+df_result['size_rep'] = size_rep
+
+print("Save table of all results")
+df_result.to_csv("Results_variants_all_analysis.csv")
+
+print("Create summary")
+header_df = ['analysis','total_variants','variants_outside_repeat', 'variant_inside_repeat', 'mean_repeat_size', 'median_repeat_size', 'min_repeat_size', 'max_repeat_size']
+result = []
+for analysis in analysis_names:
+	df_analysis = df_result[df_result[analysis].notnull()]
+	res_to_append = summary_results(df_analysis, analysis)
+
+	# append all
+	result.append(res_to_append)
+
+# All pacbio analysis (union)
+Pacbio_cols = [col for col in df_result.columns if 'Pacbio' in col]
+df_analysis = df_result.dropna(axis=0,how='all',subset=Pacbio_cols)
+res_to_append = summary_results(df_analysis, 'Union_pacbio')
+result.append(res_to_append)
+
+# Only variants found in all pacbio (intersection)
+df_analysis = df_result[df_result['identical_pacbio'] == True]
+res_to_append = summary_results(df_analysis, 'Intersection_pacbio')
+result.append(res_to_append)
+
+# Only variants found in all analysis (intersection all analysis)
+df_analysis = df_result[df_result['identical_all'] == True]
+res_to_append = summary_results(df_analysis, 'Intersection_all')
+result.append(res_to_append)
+
+# Found in pacbio but not illumina
+df_analysis = df_result[df_result['Illumina'].isnull()]
+res_to_append = summary_results(df_analysis, 'Only_pacbio')
+result.append(res_to_append)
+
+# Found in illumina but not pacbio
+dont_keep = df_result.dropna(axis=0,how='all',subset=Pacbio_cols)
+df_analysis = df_result[~df_result.index.isin(dont_keep.index)]
+res_to_append = summary_results(df_analysis, 'Only_Illumina')
+result.append(res_to_append)
+
+summary_variants = pd.DataFrame(result)
+summary_variants.columns = header_df
+
+print("Save summary")
+summary_variants.to_csv("Results_variants_summary.csv")
+
+
+
+################################ PLOTS ##############################################################################################
+
+
+print("Create plots")
+step = 250000
+colors = ['m','r','y','g','b','c','k']
+
+# positions of genome
+gen_pos = [[i, i+step-1] for i in range(0,len_genome,step)]
+y_pos = list(np.linspace(0,1,len(analysis_names)+2))
+y_col = [colors[i%len(colors)] for i in range(len(analysis_names)) ]
+
+pylab.close('all')
+
+# create figure
+fig, axarr = pylab.subplots(len(gen_pos),1, figsize=(int(step/10000), int(len(gen_pos))*2))
+for i in range(len(gen_pos)):
+	subplot_variant_position(df_result, i, gen_pos, axarr, analysis_names, y_pos, y_col, be_repeats_concat)
+
+# add grey at the end (no genome)
+ax = axarr[-1]
+ax.axvspan(len_genome,gen_pos[-1][1], alpha=0.5, color='k')
+
+pylab.tight_layout()
+if file_fig != "show":
+	pylab.savefig(file_fig)
+else:
+	pylab.show()
+pylab.close('all')
+#pylab.show()
+
+
+
+
+
+
+
+
