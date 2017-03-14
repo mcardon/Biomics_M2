@@ -26,6 +26,10 @@ file_fig = str(sys.argv[4])
 # threshold for repeat length
 threshold = 100
 
+# name of result file (withut extension)
+filename_all_results = "2017_03_14_Results_variants_all_analysis"
+filename_summary = "2017_03_14_Results_variants_summary"
+
 ################################ FUNCTIONS ################################################################################################
 
 
@@ -104,6 +108,38 @@ def convert_illumina_indel(small_seq, large_seq, indel):
 	return new_small_seq, new_large_seq
 
 
+def type_variants_illumina(df_illumina, column_CDS):
+	# is it a mutation or indel ?
+	type_var = list(df_illumina[column_CDS].values)
+	mut_indel = []
+	for cds in type_var:
+		if ">" in cds:
+			mut_indel.append('mut')
+		else:
+			if ("ins" in cds) & ("del" in cds):
+				mut_indel.append('indel')
+			elif "ins" in cds:
+				mut_indel.append('ins')
+			elif "del" in cds:
+				mut_indel.append('del')
+			else:
+				mut_indel.append('unknown')
+	return mut_indel
+
+def type_variants_smrt(df_smrt, column_ALT):
+	type_var = list(df_smrt[column_ALT].values)
+	mut_indel = []
+	for cds in type_var:
+		if ("I" in cds) & ("D" in cds):
+			mut_indel.append('indel')
+		elif "I" in cds:
+			mut_indel.append('ins')
+		elif"D" in cds:
+			mut_indel.append('del')
+		else:
+			mut_indel.append('mut')
+	return mut_indel
+
 def compare_results(df_result ,analysis_names,what_to_compare):
 	pacbio_identical = [True]*df_result.shape[0]
 	to_compare = []
@@ -136,9 +172,16 @@ def summary_results(df_analysis, name):
 	# mean and median rep size 4 5
 	res_to_append.append(df_in_rep['size_rep'].mean())
 	res_to_append.append(df_in_rep['size_rep'].median())
-	# min and max rep size
+	# min and max rep size 6 7
 	res_to_append.append(df_in_rep['size_rep'].min())
 	res_to_append.append(df_in_rep['size_rep'].max())
+	# type of variant mut ins del 8 9 10
+	res_to_append.append(df_analysis[df_analysis['mut_indel'] == 'mut'].shape[0] )
+	res_to_append.append(df_analysis[df_analysis['mut_indel'] == 'ins'].shape[0] )
+	res_to_append.append(df_analysis[df_analysis['mut_indel'] == 'del'].shape[0] )
+	not_sure = df_analysis.shape[0] - sum(res_to_append[-3:])
+	res_to_append.append(not_sure)
+
 	return res_to_append
 
 
@@ -270,7 +313,7 @@ f.close()
 df_shustring.columns = header_df
 
 
-################################ EXECUTE ##############################################################################################
+################################ EXECUTE : ALL RESULTS ##############################################################################################
 
 print("find repeats location")
 # find repeats location
@@ -286,10 +329,17 @@ df_illumina['data_type'] = ['Illumina']*df_illumina.shape[0]
 ref_list = list(df_illumina['reference'].values)
 alt_list = list(df_illumina['alternative'].values)
 tri_del = [len(ref_list[i]) > len(alt_list[i]) for i in range(len(alt_list))]
+# add 1 to position in variant calling sequana, to match position of smrtlink
 df_illumina.loc[tri_del,'position'] =  df_illumina.loc[tri_del,'position']  +1
 
+# add column with type of mutation
+mut_indel = type_variants_illumina(df_illumina, 'CDS_position')
+df_illumina['mut_indel'] = mut_indel
 
-list_df_to_merge = [df_illumina[['position','reference','alternative','data_type']]]
+# append to list of results
+df_to_merge = df_illumina[['position','reference','alternative','freebayes_score','mut_indel','data_type']]
+df_to_merge.columns = ['position','reference','alternative','score','mut_indel','data_type']
+list_df_to_merge = [df_to_merge]
 analysis_names.append('Illumina')
 
 #Pacbio
@@ -298,10 +348,15 @@ for i in range(len(list_df_smrt_names)):
 	name = list_df_smrt_names[i]
 	name = name.replace('output_','').replace('.vcf','')
 	analysis_names.append('Pacbio_' + name)
+	# annotate
 	df_smrt['data_type'] = ['Pacbio_' + name]*df_smrt.shape[0]
 
-	df_to_merge = df_smrt[['POS','REF','ALT','data_type']]
-	df_to_merge.columns = ['position','reference','alternative','data_type']
+	# add column with type of mutation
+	mut_indel = type_variants_smrt(df_smrt, 'ALT')
+	df_smrt['mut_indel'] = mut_indel
+
+	df_to_merge = df_smrt[['POS','REF','ALT','QUAL','mut_indel','data_type']]
+	df_to_merge.columns = ['position','reference','alternative','score','mut_indel','data_type']
 
 	list_df_to_merge.append(df_to_merge)
 
@@ -309,39 +364,50 @@ for i in range(len(list_df_smrt_names)):
 concat_variant = pd.concat(list_df_to_merge)
 concat_variant.sort_values(by='position',axis=0,inplace=True)
 
+
 print("Create results table")
-res_variant_names = ['position'] + analysis_names
+# format columns names
+score_names = [ analysis + '_score' for analysis in analysis_names]
+col_names = []
+for i in range(len(analysis_names)):
+	col_names.extend([analysis_names[i], score_names[i]])
+
+res_variant_names = ['position'] + col_names + ['mut_indel']
 res_variant = []
-pos_indel_illumina_to_remove = [] # deletions are i-1 in sequana variant calling, while i+1 in pacbio data
 
 for i in set(concat_variant['position']):
 	df = concat_variant[concat_variant['position'] == i]
 	# position
 	res = [i]
-	#analysis
+	# analysis and score
 	var_found = set(df['data_type'])
 	for j in analysis_names:
 		if j in var_found:
 			ref = df.loc[df['data_type'] == j, 'reference'].values[0]
 			alt = df.loc[df['data_type'] == j, 'alternative'].values[0]
+			score = df.loc[df['data_type'] == j, 'score'].values[0]
 			# indel in illumina are different format from pacbio, change to compare
 			if (j == "Illumina") & (len(ref) != len(alt)):
 				if len(ref) > len(alt):
 					alt, ref = convert_illumina_indel(alt, ref, 'delete')
-
 				else:
 					ref, alt = convert_illumina_indel(ref, alt, 'insert')
 
 			res.append(ref + '>' + alt)
+			res.append(score)
 		else:
 			res.append(None)
+			res.append(None)
+	# type of mutation : should be unique, but consider it's not, just in case
+	var_type = set(df['mut_indel'])
+	res.append('_'.join(var_type))
 
 	# append result
 	res_variant.append(res)
 
 
 df_result = pd.DataFrame(res_variant)
-df_result.columns = res_variant_names
+df_result.columns = res_variant_names # XXX change names
 df_result.sort_values(by='position', axis=0, inplace=True)
 
 
@@ -376,10 +442,13 @@ df_result['is_inside_repeat_' +str(threshold)] = is_inside_repeat
 df_result['size_rep'] = size_rep
 
 print("Save table of all results")
-df_result.to_csv("Results_variants_all_analysis.csv")
+df_result.to_csv(filename_all_results + ".csv")
+
+
+################################ EXECUTE : SUMMARY ##############################################################################################
 
 print("Create summary")
-header_df = ['analysis','total_variants','variants_outside_repeat', 'variant_inside_repeat', 'mean_repeat_size', 'median_repeat_size', 'min_repeat_size', 'max_repeat_size']
+header_df = ['analysis','total_variants','variants_outside_repeat', 'variant_inside_repeat', 'mean_repeat_size', 'median_repeat_size', 'min_repeat_size', 'max_repeat_size', 'mut','ins','del','not_sure']
 result = []
 for analysis in analysis_names:
 	df_analysis = df_result[df_result[analysis].notnull()]
@@ -419,7 +488,7 @@ summary_variants = pd.DataFrame(result)
 summary_variants.columns = header_df
 
 print("Save summary")
-summary_variants.to_csv("Results_variants_summary.csv")
+summary_variants.to_csv(filename_summary + ".csv")
 
 
 
