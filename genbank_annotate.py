@@ -29,6 +29,7 @@ file_genbank = str(sys.argv[4])
 ################################ INPUT DATA ################################################################################################
 
 df = pd.read_csv(file_input,sep=",")
+df = df.sort([col_name_pos])
 
 seq_records = SeqIO.parse(file_genbank, "genbank")
 record = next(seq_records)
@@ -55,19 +56,19 @@ for pos in list(df['position']):
 	
 	if (pos >= b) & (pos <= e):
 		########### variant inside CDS
-		print(record.features[rec_i])
 		res = []
 		# convert strand info
-		strand = [ '+' if record.features[2].strand else '-'][0]
+		strand = '+' if record.features[rec_i].strand else '-'
 		# CDS, start, end, strand, gene_ID, gene_name, product, note
 		res.append(record.features[rec_i].type)                               # CDS
 		res.append(b)                                                         # start
 		res.append(e)                                                         # end
 		res.append(strand)                                                    # strand
-		res.append(" ; ".join(record.features[rec_i].qualifiers["db_xref"]) ) # gene ID (maybe more than one)
-		res.append(" ; ".join(record.features[rec_i].qualifiers["gene"]) )    # gene name (maybe more than one)
-		res.append(" ; ".join(record.features[rec_i].qualifiers["product"]) ) # product of the gene
-		res.append(" ; ".join(record.features[rec_i].qualifiers["note"]) )    # note (description)
+		quals = record.features[rec_i].qualifiers
+		res.append(" ; ".join(quals["db_xref"]) if "db_xref" in quals else None ) # gene ID (maybe more than one)
+		res.append(" ; ".join(quals["gene"]) if "gene" in quals else None )       # gene name (maybe more than one)
+		res.append(" ; ".join(quals["product"]) if "product" in quals else None ) # product of the gene
+		res.append(" ; ".join(quals["note"]) if "note" in quals else None )       # note (description)
 	else:
 		########### variant not in CDS : append empty line
 		res = [None]*len(header_df_results)
