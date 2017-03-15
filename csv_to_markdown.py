@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # arg1 : csv file input
-# arg2 : filename output.bam
+# arg2 : filename output.markdown
 # arg3 : optionnal : header? ( if anything here, there is a header)
 
 ################################ IMPORT ################################################################################################

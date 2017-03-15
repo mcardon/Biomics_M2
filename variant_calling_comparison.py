@@ -27,8 +27,8 @@ file_fig = str(sys.argv[4])
 threshold = 100
 
 # name of result file (withut extension)
-filename_all_results = "2017_03_14_Results_variants_all_analysis"
-filename_summary = "2017_03_14_Results_variants_summary"
+filename_all_results = "2017_03_15_Results_variants_all_coverage"
+filename_summary = "2017_03_15_Results_variants_coverage_summary"
 
 ################################ FUNCTIONS ################################################################################################
 
@@ -515,7 +515,9 @@ for i in range(len(gen_pos)):
 ax = axarr[-1]
 ax.axvspan(len_genome,gen_pos[-1][1], alpha=0.5, color='k')
 
-pylab.tight_layout()
+#fig.subplots_adjust(bottom=0.2)
+#fig.tight_layout()
+pylab.subplots_adjust(hspace = 1)
 if file_fig != "show":
 	pylab.savefig(file_fig)
 else:
