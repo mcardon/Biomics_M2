@@ -4,7 +4,6 @@
 # arg3 : output.csv
 # arg4 : genbank_file.gbk
 
-###### IMPORTANT : input.csv must be sorted by ascending position !!
 
 # this will add genbank annotation in the last columns and output in csv format
 # this will parse only the first entry in genbank file (first genome) so better use single genome genbank file
@@ -29,7 +28,7 @@ file_genbank = str(sys.argv[4])
 ################################ INPUT DATA ################################################################################################
 
 df = pd.read_csv(file_input,sep=",")
-df = df.sort([col_name_pos])
+df = df.sort_values(by=col_name_pos,ascending=True)
 
 seq_records = SeqIO.parse(file_genbank, "genbank")
 record = next(seq_records)
@@ -58,7 +57,7 @@ for pos in list(df['position']):
 		########### variant inside CDS
 		res = []
 		# convert strand info
-		strand = '+' if record.features[rec_i].strand else '-'
+		strand = '+' if record.features[rec_i].strand > 0 else '-'
 		# CDS, start, end, strand, gene_ID, gene_name, product, note
 		res.append(record.features[rec_i].type)                               # CDS
 		res.append(b)                                                         # start

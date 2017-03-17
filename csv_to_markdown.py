@@ -14,6 +14,8 @@ filename_output = str(sys.argv[2])
 
 if len(sys.argv) > 3:
 	header = True
+else:
+	header = False
 
 ################################ FUNCTIONS ##############################################################################################
 

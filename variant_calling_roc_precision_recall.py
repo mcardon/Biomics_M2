@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 # arg1 : results_variant_all.csv : output of variant_calling_comparison.py
 # arg2 : true_variants.csv : csv file with true variant info : must have 2 columns : 'position' 'variant'
-# arg3 : length of genome
+# arg3 : length of genome  (4086189 for tohama)
 # arg4 : filename for figure (if 'show', don't save but show instead)
+# arg5 : optionnal : yes : personnal colormap (fill parameters with colormap)
 
 # only columns with "Pacbio" or "Illumina" in column name are taken into account for analysis
 
@@ -21,6 +22,15 @@ file_result = str(sys.argv[1])
 file_variants = str(sys.argv[2])
 len_genome = int(sys.argv[3])
 file_fig = str(sys.argv[4])
+
+colormap = 'nipy_spectral_r'
+if len(sys.argv) > 5:
+	cmap = pylab.cm.get_cmap(colormap)
+	colors = [cmap(i) for i in np.linspace(0,1,7)]
+	custom_colormap = [colors[0]]
+	for i in range(1,7):
+		custom_colormap.extend([colors[i]]*3)
+	custom_colormap.extend([colors[-1]])
 
 
 ################################ FUNCTIONS ################################################################################################
@@ -121,14 +131,20 @@ for analysis in list_pacbio_analysis:
 	df_results[analysis + "_score"] = round(df_results[analysis + "_score"] /100. , 2)
 
 
-cmap = pylab.cm.get_cmap('plasma_r')
-colors = [cmap(i) for i in np.linspace(0,1,len(list_analysis))]
+if len(sys.argv) > 5:
+	print("perso")
+	colors = custom_colormap
+else:
+	cmap = pylab.cm.get_cmap(colormap)
+	colors = [cmap(i) for i in np.linspace(0,1,len(list_analysis))]
 
 # get results for curves
+
+pylab.figure(figsize=(8,8))
 for i in range(len(list_analysis)):
 	analysis = list_analysis[i]
 	res = compute_table_performance(analysis, df_results)
-	print("\n%s" %analysis)
+	print("%s" %analysis)
 	# [TP, FP, FN, TN]
 	# print(len(res[0]), len(res[1]), res[2], res[3] , sum([len(res[0]), len(res[1]), res[2], res[3]]))
 	TP = res[0]
@@ -138,19 +154,21 @@ for i in range(len(list_analysis)):
 	y_true = np.array([1]*len(TP) + [1]*len(FN) + [0]*len(FP) + [0]*len(TN))
 	y_scores = np.array(TP + FN + FP + TN)
 	precision, recall, thresholds = precision_recall_curve(y_true, y_scores)
-	# print( precision  )
-	# print( recall)
-	# print( thresholds)
 	pylab.plot(recall, precision, color=colors[i],label=analysis)
-	pylab.xlabel('Recall')
-	pylab.ylabel('Precision')
-	pylab.ylim([0.0, 1.05])
-	pylab.xlim([0.0, 1.05])
-	pylab.title('Precision-Recall')
-	pylab.legend(loc="lower left")
+
+
+pylab.xlabel('Recall')
+pylab.ylabel('Precision')
+pylab.ylim([0.0, 1.05])
+pylab.xlim([0.0, 1.05])
+pylab.title('Precision-Recall')
+#pylab.legend(loc="lower left")
+
+lgd = pylab.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
+#pylab.tight_layout()
 
 if file_fig != "show":
-	pylab.savefig(file_fig)
+	pylab.savefig(file_fig,bbox_extra_artists=(lgd,), bbox_inches='tight')
 else:
 	pylab.show()
 

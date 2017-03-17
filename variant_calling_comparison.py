@@ -27,8 +27,10 @@ file_fig = str(sys.argv[4])
 threshold = 100
 
 # name of result file (withut extension)
-filename_all_results = "2017_03_15_Results_variants_all_coverage"
-filename_summary = "2017_03_15_Results_variants_coverage_summary"
+filename_all_results = "2017_03_17_Results_variants_all_coverage"
+filename_summary = "2017_03_17_Results_variants_coverage_summary"
+
+colormap = 'cool'
 
 ################################ FUNCTIONS ################################################################################################
 
@@ -241,9 +243,9 @@ def subplot_variant_position(df_result, i, gen_pos, axarr, analysis_names, y_pos
 		analysis = analysis_names[j]
 		df = df_to_plot.dropna(axis=0, how='all', subset=[analysis])
 		if analysis == 'Illumina':
-			ax.plot(df['position'], [y_pos[j+1]]*df.shape[0], 'ks',markersize=8)
+			ax.plot(df['position'], [y_pos[j+1]]*df.shape[0], 'ks',markersize=8, label=analysis)
 		else:
-			ax.plot(df['position'], [y_pos[j+1]]*df.shape[0], y_col[j] + 'o')
+			ax.plot(df['position'], [y_pos[j+1]]*df.shape[0], color=y_col[j], marker='o', linestyle='None', label=analysis )
 	# highlight repeated regions
 
 	be_repeats_concat_i = find_begin_end_interval(be_repeats_concat, gen_pos[0][0], gen_pos[0][1])
@@ -497,12 +499,15 @@ summary_variants.to_csv(filename_summary + ".csv")
 
 print("Create plots")
 step = 250000
-colors = ['m','r','y','g','b','c','k']
+#colors = ['m','r','y','g','b','c','k']
+
+cmap = pylab.cm.get_cmap(colormap)
+#colors = [cmap(i) for i in np.linspace(0,1,len(list_analysis))]
 
 # positions of genome
 gen_pos = [[i, i+step-1] for i in range(0,len_genome,step)]
 y_pos = list(np.linspace(0,1,len(analysis_names)+2))
-y_col = [colors[i%len(colors)] for i in range(len(analysis_names)) ]
+y_col = [cmap(i) for i in np.linspace(0,1,len(analysis_names)) ]
 
 pylab.close('all')
 
@@ -518,6 +523,8 @@ ax.axvspan(len_genome,gen_pos[-1][1], alpha=0.5, color='k')
 #fig.subplots_adjust(bottom=0.2)
 #fig.tight_layout()
 pylab.subplots_adjust(hspace = 1)
+pylab.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
+#pylab.legend(loc="lower left")
 if file_fig != "show":
 	pylab.savefig(file_fig)
 else:
