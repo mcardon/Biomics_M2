@@ -8,7 +8,7 @@
 from sequana.lazy import pylab
 from sequana.lazy import pandas as pd
 from sequana.lazy import numpy as np
-
+from random import shuffle
 import sys
 
 ################################ PARAMETERS ##############################################################################################
@@ -17,12 +17,13 @@ file_blasr = str(sys.argv[1])
 
 save_result = False
 if len(sys.argv) > 2:
-	if str(sys.argv[1]) == "save":
+	if str(sys.argv[2]) == "save":
 		save_result = True
 
 # file format 
 # https://github.com/PacificBiosciences/blasr/wiki/Blasr-Output-Format
 blasr_columns = "qName qLength qStart qEnd qStrand tName tLength tStart tEnd tStrand score numMatch numMismatch numIns numDel mapQV qAlignedSeq matchPattern tAlignedSeq".split(" ")
+colormap = "gist_rainbow"
 
 ################################ FUNCTIONS ##############################################################################################
 
@@ -65,9 +66,18 @@ if save_result:
 
 ################################ PLOTS ##############################################################################################
 
+# title
 title_plot = file_blasr.split("/")[-1]
+# colors
+cmap = pylab.cm.get_cmap(colormap)
+# shuffel colors :  in case 2 adjacent contigs have the same color, user can plot again to see better
+shuffle_col = list(np.linspace(0,1,res_blasr.shape[0]))
+shuffle(shuffle_col)
+colors = [cmap(i) for i in shuffle_col]
 
-pylab.plot(res_blasr["qLength"], res_blasr["score"],"bo",alpha=0.5)
+
+
+pylab.plot(res_blasr["qLength"], res_blasr["score"], "bo" ,alpha=0.5)
 pylab.xlabel("Length of contig")
 pylab.ylabel("Score blasr (not normalised)")
 pylab.title(title_plot)
@@ -80,21 +90,37 @@ pylab.ylabel("Score blasr (normalised by length)")
 pylab.title(title_plot)
 pylab.show()
 
+
+fig, axarr = pylab.subplots(2,figsize=(15,8), sharex=True)
+fig.suptitle("Coverage by contigs (blasr)\n%s" % title_plot, fontsize=10)
 # plot coverage found by blasr, with score
-pylab.figure(figsize=(15,3))
+ax = axarr[0]
 for i in range(res_blasr.shape[0]):
-	contig = res_blasr["qName"][i]
-	res_to_plot = res_blasr[res_blasr["qName"] == contig]
-	start = int(res_to_plot["tStart"].values[0])
-	end = int(res_to_plot["tEnd"].values[0])
-	score = float(res_to_plot["score_norm"].values[0])
-	pylab.plot([start, end],[score]*2, "b-" )
-pylab.title("Coverage by contigs (blasr)\n%s" % title_plot)
-pylab.xlabel("Reference genome position")
-pylab.ylabel("Score blasr (normalised by length)")
-pylab.tight_layout()
+	res_to_plot = res_blasr.iloc[i,:]
+	contig = res_to_plot["qName"]
+	start = int(res_to_plot["tStart"])
+	end = int(res_to_plot["tEnd"])
+	score = float(res_to_plot["score_norm"])
+	ax.plot([start, end],[score]*2, ls='-', lw=5, color=colors[i], solid_capstyle="butt" )
+ax.set_ylabel("Score blasr (normalised by length)")
+
+
+
+# plot coverage found by blasr, with random y distribution (to see if there are overlaps)
+ax = axarr[1]
+y = list(np.linspace(0,1,res_blasr.shape[0]))
+for i in range(res_blasr.shape[0]):
+	res_to_plot = res_blasr.iloc[i,:]
+	contig = res_to_plot["qName"]
+	start = int(res_to_plot["tStart"])
+	end = int(res_to_plot["tEnd"])
+	score = float(res_to_plot["score_norm"])
+	ax.plot([start, end],[y[i]]*2, ls='-', lw=5, color=colors[i], solid_capstyle="butt" )
+ax.set_ylabel("Random")
+ax.set_xlabel("Reference genome position")
+
+
+fig.subplots_adjust(bottom=0.2,top=0.8)
+#fig.tight_layout()
 pylab.show()
-
-
-
-
+pylab.close("all")
