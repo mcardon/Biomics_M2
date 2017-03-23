@@ -32,6 +32,7 @@ raw_BAM.stride(filename_output, stride=stride_nb, shift=shift)
 name = "subreads_env"
 dict_shift = {1:"b", 2:"c"}
 """
+# batch moode
 for div in [90,36,9]:
 	for shift in dict_shift.keys():
 		filename_output = name + str(int(900/div)) + "X_" + dict_shift[shift] +".bam"
