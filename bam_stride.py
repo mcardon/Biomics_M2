@@ -29,8 +29,17 @@ raw_BAM = pacbio.PacBioInputBAM(filename_BAM)
 
 raw_BAM.stride(filename_output, stride=stride_nb, shift=shift)
 
-name = "subreads_env"
-dict_shift = {1:"b", 2:"c"}
+name = "subreads_v2_env"
+#dict_shift = {1:"b", 2:"c"}
+
+"""
+# batch moode
+for div in [109,55,30,22,11,5]:
+	filename_output = name + str(int(545/div)) + "X_" +".bam"
+	raw_BAM.stride(filename_output, stride=div, shift=shift)
+"""
+
+
 """
 # batch moode
 for div in [90,36,9]:
