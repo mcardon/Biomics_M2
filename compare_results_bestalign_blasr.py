@@ -31,7 +31,7 @@ do_plot = False
 if len(sys.argv) > 3:
 	file_plot = str(sys.argv[3])
 	do_plot = True
-	title_plot = "25X De novo Pacbio"
+	title_plot = fof_scores_csv.split("/")[-1]
 	colormap = "gist_rainbow"
 
 	if file_plot == 'show':

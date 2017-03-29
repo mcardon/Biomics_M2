@@ -31,6 +31,8 @@ raw_BAM.stride(filename_output, stride=stride_nb, shift=shift)
 
 name = "subreads_v2_env"
 #dict_shift = {1:"b", 2:"c"}
+#dict_shift = {2:"c"}
+dict_shift = {0:"a"}
 
 """
 # batch moode
@@ -42,12 +44,12 @@ for div in [109,55,30,22,11,5]:
 
 """
 # batch moode
-for div in [90,36,9]:
+for div in [27,24,20,18,15,13]:
 	for shift in dict_shift.keys():
-		filename_output = name + str(int(900/div)) + "X_" + dict_shift[shift] +".bam"
+		filename_output = name + str(int(545/div)) + "X_" + dict_shift[shift] +".bam"
 		raw_BAM.stride(filename_output, stride=div, shift=shift)
-
 """
+
 ################################ PLOTS ##############################################################################################
 
 
