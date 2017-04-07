@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 # arg1 : BAM file (output of Pacbio sequencer)
+#arg2 : prefix filename for plots - if show : don't save, show instead
 import pysam
 import matplotlib.pyplot as plt
 import sys
@@ -7,6 +8,11 @@ import numpy as np
 import collections
 
 filename = str(sys.argv[1])
+filename_plot = str(sys.argv[2])
+
+save_plot = True
+if filename_plot == "show":
+	save_plot = False
 
 b = pysam.AlignmentFile(filename, check_sq=False)
 
@@ -78,24 +84,30 @@ plt.plot(all_read_len, all_GC_percent, 'bo', alpha=0.07)
 plt.xlabel("Read length")
 plt.ylabel("GC percent")
 plt.title("GC content vs length \n Mean length = %.2f , Mean GC : %.2f" %(mean_len, mean_GC))
-plt.savefig("GC_content_vs_len.png")
-#plt.show()
+if save_plot:
+	plt.savefig(filename_plot + "GC_content_vs_len.png")
+else:
+	plt.show()
 plt.close()
 
 # histogram GC percent
 plt.hist(all_GC_percent, bins=40)
 plt.xlabel("GC percent")
 plt.title("GC content  \n Mean GC : %.2f" %(mean_GC))
-plt.savefig("GC_content_hist.png")
-#plt.show()
+if save_plot:
+	plt.savefig(filename_plot + "GC_content_hist.png")
+else:
+	plt.show()
 plt.close()
 
 # histogram read length
 plt.hist(all_read_len, bins=40)
 plt.xlabel("Read length")
 plt.title("Read length \n Mean length = %.2f" %(mean_len))
-plt.savefig("Read_len_hist.png")
-#plt.show()
+if save_plot:
+	plt.savefig(filename_plot + "Read_len_hist.png")
+else:
+	plt.show()
 plt.close()
 
 
