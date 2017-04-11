@@ -148,6 +148,9 @@ if save_output:
 time_end = time.time()
 
 
+################################ PLOT ##############################################################################################
+
+
 print("Finding %s : Finished in %.2f seconds, plotting result" % (TYPE_FILTER,(time_end - time_begin)))
 
 n_ORF = df["len_ORF"].dropna().shape[0]
