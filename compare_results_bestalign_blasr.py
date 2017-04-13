@@ -8,6 +8,7 @@
 ## file format : /home/mcardon/Mel/Datas/2017_03_17_De_novo_smrtlink/blasr_results_multiple_ref/100X_ref_NC_rotate_1225857.fasta.blasr5.out_scores.csv
 ## string between 002929_ and .fasta will be parsed : must contain "rotate" and a number for the rotation step
 
+### TODO : adapt code for multiple references
 
 ################################ IMPORT ################################################################################################
 

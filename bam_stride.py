@@ -7,7 +7,6 @@
 ################################ IMPORT ################################################################################################
 import os
 import sys
-#from sequana import *
 
 scriptpath = "/home/mcardon/Mel/Code/sequana/sequana/"
 sys.path.append(os.path.abspath(scriptpath))
