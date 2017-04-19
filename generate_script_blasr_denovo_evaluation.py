@@ -36,7 +36,7 @@ header_script.append("#SBATCH -o ./logs/%s_%s_ref_rotate.out -e ./logs/%s_%s_ref
 
 body_script = []
 for i in range(len(list_files)):
-	body_script.append("srun blasr --nproc 2 --minMatch 15 --maxMatch 20 --advanceHalf --advanceExactMatches 10 --fastMaxInterval --fastSDP --aggressiveIntervalCut %s %s%s -m 5 --out %s%s.blasr5.out || exit %d" % (filename_input,directory_ref_rotate,list_files[i], filename_input.replace(".fasta",""), list_files[i].replace(".fasta",""), i+1))
+	body_script.append("srun blasr --nproc 2 --minMatch 15 --maxMatch 20 --advanceHalf --advanceExactMatches 10 --fastMaxInterval --fastSDP --aggressiveIntervalCut %s %s%s -m 5 --out %s__%s.blasr5.out || exit %d" % (filename_input,directory_ref_rotate,list_files[i], filename_input.replace(".fasta",""), list_files[i].replace(".fasta",""), i+1))
 
 
 tail_script = ["exit 0"]
