@@ -20,14 +20,18 @@ filename_kraken = str(sys.argv[1])
 filename_output = str(sys.argv[2])
 
 
-
 ################################ FUNCTIONS ##############################################################################################
 
 def parse_details_kraken(detail_kr):
 	detail_dict = {}
 	for kmer_found in detail_kr:
 		kmer_found = kmer_found.split(":")
-		kmer_found = [int(k) for k in kmer_found]
+		try:
+			kmer_found = [int(k) for k in kmer_found]
+		except ValueError:
+			print(detail_kr)
+			print(kmer_found)
+			kmer_found = [0, kmer_found[1]]
 		if kmer_found[0] != 0:
 			if kmer_found[0] in detail_dict:
 				detail_dict[kmer_found[0]] += kmer_found[1]
@@ -56,6 +60,9 @@ def create_list_detailed_kraken(name, status, result_kr, length, detail_dict):
 		except KeyError:
 			name_tax = "Unknown"
 			#print(info_taxon)
+		except TypeError:
+			name_tax = "Unknown"
+
 		nb_hits = detail_dict[taxon]
 		res.append(row_df + [nb_hits ,taxon, name_tax])
 
@@ -65,6 +72,9 @@ def create_list_detailed_kraken(name, status, result_kr, length, detail_dict):
 ################################ INPUT DATA ##############################################################################################
 
 k_result = kraken.KrakenResults(filename_kraken)
+
+# save result without detailed info
+k_result.df.to_csv(filename_output)
 
 ################################ EXECUTE ##############################################################################################
 
@@ -95,12 +105,18 @@ while contig_info:
 	# print("")
 	# print(status, name, result_kr,length)
 
-	detail_kr = detail_kr.split(" ")
-	detail_dict = parse_details_kraken(detail_kr)
-	res_one_contig = create_list_detailed_kraken(name, status, result_kr, length, detail_dict)
+	# classified sequences : get details
+	if status == "C":
+		detail_kr = detail_kr.split(" ")
+		detail_dict = parse_details_kraken(detail_kr)
+		res_one_contig = create_list_detailed_kraken(name, status, result_kr, length, detail_dict)
+	else:
+		res_one_contig = [[name, status, result_kr, length, 0 , 0, "Unknown"]]
 	list_detailed_kraken = list_detailed_kraken + res_one_contig
 	# print(detail_dict)
 	contig_info = f.readline()
+
+
 
 f.close()
 
@@ -108,11 +124,12 @@ f.close()
 df_detailed_kraken = pd.DataFrame(list_detailed_kraken)
 df_detailed_kraken.columns = ["name","status","result_kr","length_contig","nb_hits","taxon","scientific_name"]
 
-df_detailed_kraken.to_csv(filename_output)
+df_detailed_kraken.to_csv(filename_output.replace(".csv","_detailed.csv"),index=None)
 
 ################################ PLOTS ##############################################################################################
 
 #### in progress
+"""
 
 name_contig = "ENA_CP002217.fa_start_3633388_len_71166"
 df_to_plot = df_detailed_kraken[df_detailed_kraken['name'] == name_contig].copy()
@@ -128,6 +145,6 @@ pylab.xlabel("Number of k-mers found")
 pylab.ylabel("Species")
 pylab.show()
 
-
+"""
 
 
