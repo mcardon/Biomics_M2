@@ -31,11 +31,11 @@ level_tax = "Genus"
 title_plot = "Classification at %s level" % level_tax
 x_label = "%s Precision" %level_tax
 y_label = "%s Sensitivity"%level_tax
-xlim = [0.94,1.]
-ylim = [0.6,1.]
+xlim = [0.99,1.]
+ylim = [0.62,0.8]
 
-colors = ["b","b","r","r"]
-marker = ["o","v","o","v"]
+colors = ["b","r","b","r","b","r","b","r","b","r","b","r"]
+marker = ["o","o","o","o","s","s","X","X","X","X","v","v"]
 
 
 ################################ INPUT DATA ##############################################################################################
@@ -66,6 +66,7 @@ for i in range(len(list_input)):
 	#s = good_class_rank / float(tot_class_rank)
 	s = good_class_rank / float(10000)
 	p = good_class_rank / float(tot_class_rank + wrong_class_above)
+	print("%s : Precision = %f, Sensitivity = %f" %(list_labels[i], p, s))
 	pylab.plot(p,s,colors[i]+marker[i],label=list_labels[i])
 
 

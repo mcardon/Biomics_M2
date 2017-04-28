@@ -27,8 +27,8 @@ file_fig = str(sys.argv[4])
 threshold = 100
 
 # name of result file (withut extension)
-filename_all_results = "2017_03_27_Results_variants_all_coverage"
-filename_summary = "2017_03_27_Results_variants_coverage_summary"
+filename_all_results = "2017_04_26_Results_variants_all"
+filename_summary = "2017_04_26_Results_variants_summary"
 
 colormap = 'cool'
 
