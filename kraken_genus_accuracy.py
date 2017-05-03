@@ -11,6 +11,7 @@
 # "good_classification_above_level","wrong_classification_above_level","unknown_taxon_above_level","Unclassified"
 # each column contains the count of the corresponding classification found by kraken
 
+# parsing of read names to do ! (work only with toy data, or parse the name manually)
 
 ################################ IMPORT ################################################################################################
 import os
@@ -153,7 +154,8 @@ f = open(filename_kraken, 'r')
 contig_info = f.readline()
 while contig_info:
 	contig_list = contig_info.replace("\n","").split("\t")
-	name = contig_list[1].replace("_HiSeq","").replace("_MiSeq","").split(".")[0]
+	#name = contig_list[1].replace("_HiSeq","").replace("_MiSeq","").split(".")[0]
+	name = contig_list[1].split("_")[0]
 	names.append(name)
 	contig_info = f.readline()
 f.close()

@@ -48,7 +48,7 @@ labels = []
 for f in list_files:
 	short_name_bam = f.split("/")[-1]
 	labels.append(description[description["Filename"] == short_name_bam]["polymerase"].values[0])
-	list_BAM.append(pacbio.PacBioInputBAM(f))
+	list_BAM.append(pacbio.BAMPacbio(f))
 
 
 

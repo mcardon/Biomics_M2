@@ -31,11 +31,14 @@ level_tax = "Genus"
 title_plot = "Classification at %s level" % level_tax
 x_label = "%s Precision" %level_tax
 y_label = "%s Sensitivity"%level_tax
-xlim = [0.99,1.]
-ylim = [0.62,0.8]
 
-colors = ["b","r","b","r","b","r","b","r","b","r","b","r"]
-marker = ["o","o","o","o","s","s","X","X","X","X","v","v"]
+manual_scale = True
+if manual_scale:
+	xlim = [0.94,1.]
+	ylim = [0.33,1.]
+
+colors = ["b","b","b","b","b","b","k","r"]
+marker = ["o","o","o","o","o","o","s","X"]
 
 
 ################################ INPUT DATA ##############################################################################################
@@ -61,19 +64,21 @@ for i in range(len(list_input)):
 	df = pd.read_csv(list_input[i])
 	good_class_rank = df["good_classification_at_level"].sum()
 	tot_class_rank = df["good_classification_at_level"].sum() + df["wrong_classification_at_level"].sum()
+	tot = df["Unclassified"].sum() + tot_class_rank + df["unknown_taxon_at_level"].sum()
 	#print(tot_class_rank)
 	wrong_class_above = df["wrong_classification_above_level"].sum()
 	#s = good_class_rank / float(tot_class_rank)
-	s = good_class_rank / float(10000)
+	s = good_class_rank / float(tot)
 	p = good_class_rank / float(tot_class_rank + wrong_class_above)
 	print("%s : Precision = %f, Sensitivity = %f" %(list_labels[i], p, s))
 	pylab.plot(p,s,colors[i]+marker[i],label=list_labels[i])
 
 
 pylab.title(title_plot)
-pylab.legend()
-pylab.xlim(xlim)
-pylab.ylim(ylim)
+pylab.legend(loc=2)
+if manual_scale:
+	pylab.xlim(xlim)
+	pylab.ylim(ylim)
 pylab.xlabel(x_label)
 pylab.ylabel(y_label)
 if save_plot:
