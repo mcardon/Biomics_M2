@@ -63,7 +63,6 @@ pylab.show()
 # plot GC %
 for i in range(len(list_BAM)):
 	bam = list_BAM[i]
-	# plot read length
 	bam.hist_GC(hold=True,label=labels[i])
 pylab.title("GC content")
 pylab.legend()
@@ -72,7 +71,6 @@ pylab.show()
 # plot ZMW passes
 for i in range(len(list_BAM)):
 	bam = list_BAM[i]
-	# plot read length
 	bam.hist_ZMW_subreads(hold=True,label=labels[i])
 pylab.title("ZMW passes")
 pylab.legend()

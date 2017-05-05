@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+# arg1 : what to do : possible choices : covplot hist2d boxplot all
+# arg2 : filename for plot (if "show", dont save, show instead)
+
 ################################ IMPORT ################################################################################################
 
 import pandas as pd

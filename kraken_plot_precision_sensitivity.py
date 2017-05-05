@@ -34,11 +34,11 @@ y_label = "%s Sensitivity"%level_tax
 
 manual_scale = True
 if manual_scale:
-	xlim = [0.94,1.]
+	xlim = [0.995,1.]
 	ylim = [0.33,1.]
 
-colors = ["b","b","b","b","b","b","k","r"]
-marker = ["o","o","o","o","o","o","s","X"]
+colors = ["b","b","b","b","b","b","k","k","k","k","r"]
+marker = ["o","o","o","o","o","o","o","X",".","s","X"]
 
 
 ################################ INPUT DATA ##############################################################################################
