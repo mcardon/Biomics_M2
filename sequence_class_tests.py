@@ -82,7 +82,7 @@ class Repeats(object):
          sequence is used.
         :param int threshold: Minimal length of repeat to output
         """
-        self.threshold                  = None
+        self._threshold                 = None
         self._df_shustring              = None
         self._header                    = None
         self._length                    = None
@@ -96,7 +96,7 @@ class Repeats(object):
         and replace spaces by underscores
         """
         if self._header is None:
-            first_line = subprocess.check_output(["head","-n","1",file_sequence])
+            first_line = subprocess.check_output(["head","-n","1",self._filename_fasta])
             first_line = first_line.decode('utf8')
             first_line = first_line.replace("\n","").replace(" ","_")
             self._header = first_line
@@ -151,29 +151,25 @@ class Repeats(object):
 
 
     def _find_begin_end_repeats(self):
-        """Returns position of repeats longer thant threshold
-        as an ordered dataframe
+        """Returns position of repeats longer than threshold
+        as an ordered list
         """
-        # if a threshold is already set, save the previous one
-        if self.threshold is not None:
-            previous_thr = self.threshold
-        else:
-            previous_thr = None
-        
-        self.threshold = threshold
-
         if self.df_shustring is None:
             self._get_shustrings_length()
 
-        # if there is n result, or the threshold has changed
-        if (self._begin_end_repeat_position is None) | (self.threshold != previous_thr):
+        if self._threshold is None:
+            #print("No threshold : please set minimul length of repeats to output")
+            raise ValueError("threshold : please set threshold (minimum length of repeats to output)")
+
+        # if there is no result yet, or the threshold has changed
+        if (self._begin_end_repeat_position is None) | (self.threshold != self._previous_thr):
             nb_row = self.df_shustring.shape[0]
             i = 0
             step_repeat_seq = []
             be_repeats = []
             e = 0
 
-            # use list because much faster
+            # use list because faster
             list_len_shus = list(self.df_shustring.loc[:,"shustring_length"])
 
             while(i < nb_row):
@@ -193,18 +189,22 @@ class Repeats(object):
                     i = e-1
                 i +=1
             # add 0 at the end if needed
-            step_repeat_seq = step_repeat_seq + [0 for j in range(e,i,1)]
+            step_repeat_seq = step_repeat_seq + [0 for j in range(e,self._length,1)]
 
             # if there are repeats, merge repeats that are fragmented
             if len(be_repeats) > 0:
                 prev_tup = be_repeats[0]
                 b = prev_tup[0]
                 begin_end_repeat_position = []
-                for tup in be_repeats[1:len(be_repeats)]:
+                for i in range(1,len(be_repeats),1):
+                    tup = be_repeats[i]
                     if tup[0] == prev_tup[1]:
                         # concat
                         e = tup[1]
                         prev_tup = tup
+                        if i == (len(be_repeats) -1):
+                            # last tup : append to result
+                            begin_end_repeat_position.append((b,e))
                     else:
                         # real end of repeat : append result and update b, e
                         e = prev_tup[1]
@@ -215,8 +215,23 @@ class Repeats(object):
                 begin_end_repeat_position = []
             self._begin_end_repeat_position = begin_end_repeat_position
 
+        #return self._begin_end_repeat_position
+    def _get_be_repeats(self):
+        self._find_begin_end_repeats()
         return self._begin_end_repeat_position
-    begin_end_repeat_position = property(_find_begin_end_repeats)
+
+    begin_end_repeat_position = property(_get_be_repeats)
+
+    def _set_threshold(self,value=0):
+        if value != self._threshold:
+            self._previous_thr = self._threshold
+        self._threshold = value
+        self._find_begin_end_repeats()
+        
+    def _get_threshold(self):
+        return self._threshold
+
+    threshold = property(_get_threshold, _set_threshold)
 
 
 
