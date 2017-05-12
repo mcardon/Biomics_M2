@@ -32,9 +32,9 @@ save_output = True
 if filename_output == "no":
 	save_output = False
 
-CODONS_STOP =     ["TAA","TGA","TAG"]
-CODONS_STOP_REV = ["TTA","TCA","CTA"]
-CODONS_START =     ["ATG"]
+CODONS_STOP      = ["TAA","TGA","TAG"]
+CODONS_STOP_REV  = ["TTA","TCA","CTA"]
+CODONS_START     = ["ATG"]
 CODONS_START_REV = ["CAT"]
 
 ################################ FUNCTIONS ##############################################################################################
