@@ -2,6 +2,7 @@
 # arg1 : kraken.out
 # arg2 : names_lineage.csv
 # arg3 : output.csv
+# arg4 : type of data (for name parsing) possible choices : sim_illumina sim_pacbio real_pacbio
 
 # This takes in input the kraken result (kraken.out) and a csv file with names of species and real taxonomy
 # columns of the input csv file must be : "name","full_name","superkingdom","phylum","class","order","family","genus","species"
@@ -18,18 +19,21 @@ import os
 import sys
 from sequana.lazy import pylab
 from sequana.lazy import pandas as pd
+from sequana import kraken
 
-scriptpath = "/home/mcardon/Mel/Code/sequana/sequana/"
-sys.path.append(os.path.abspath(scriptpath))
-import kraken
 
 ################################ PARAMETERS ##############################################################################################
 
-filename_kraken = str(sys.argv[1])
+filename_kraken       = str(sys.argv[1])
 filename_read_lineage = str(sys.argv[2])
-filename_output = str(sys.argv[3])
+filename_output       = str(sys.argv[3])
+type_data             = str(sys.argv[4])
 
 level_classification_to_measure = "genus"
+
+if type_data not in ["sim_illumina","sim_pacbio","real_pacbio"]:
+	raise ValueError("Invalid type of data to parse")
+
 # possible choices : ["superkingdom","phylum","class","order","family","genus","species"]
 
 ################################ FUNCTIONS ##############################################################################################
@@ -135,6 +139,7 @@ for tax in taxons:
 		res["superkingdom"] = "Unknown"
 		#print("Info not found on NCBI for taxon %d" % tax)
 	except KeyError:
+		res["superkingdom"] = "Unknown"
 		pass
 		#print("Rank not found for taxon %d" %tax)
 		#print(tax, info_taxon.keys())
@@ -154,8 +159,12 @@ f = open(filename_kraken, 'r')
 contig_info = f.readline()
 while contig_info:
 	contig_list = contig_info.replace("\n","").split("\t")
-	#name = contig_list[1].replace("_HiSeq","").replace("_MiSeq","").split(".")[0]
-	name = contig_list[1].split("_")[0]
+	if type_data == "sim_illumina":
+		name = contig_list[1].replace("_HiSeq","").replace("_MiSeq","").split(".")[0]
+	elif type_data == "sim_pacbio":
+		name = contig_list[1].split("_")[0]
+	elif type_data == "real_pacbio":
+		name = contig_list[1].split("/")[0]
 	names.append(name)
 	contig_info = f.readline()
 f.close()
@@ -167,11 +176,14 @@ df_read_lineage = pd.read_csv(filename_read_lineage)
 # check if classification is correct
 classification = []
 for name in df_read_lineage["name"]:
+	print("name",name)
 	df = df_result_merged[ (df_result_merged["status"]=='C') & (df_result_merged["name"] == name)]
 	real_genus = df_read_lineage[df_read_lineage["name"] == name].loc[:,level_classification_to_measure].values[0]
 
 	# classified at this level
 	cl, df_unknown = classification_result_at_level(df, real_genus, level_classification_to_measure)
+	if df_unknown.shape[0] == 0:
+		print("unknown empty")
 	
 	# not classified at this level, but classified above
 	i = len(levels_above)-1
@@ -189,11 +201,14 @@ for name in df_read_lineage["name"]:
 	# unclassified
 	df = df_result_merged[ (df_result_merged["status"]=='U') & (df_result_merged["name"] == name)]
 	cl.append(df.shape[0])
+
+	# total number of reads
+	cl.append(names.count(name))
 	
 	classification.append(cl)
 
 classification_columns = ["good_classification_at_level", "wrong_classification_at_level", "unknown_taxon_at_level",
-"good_classification_above_level", "wrong_classification_above_level", "unknown_taxon_above_level","Unclassified"]
+"good_classification_above_level", "wrong_classification_above_level", "unknown_taxon_above_level","Unclassified","total_N_reads"]
 classification = pd.DataFrame(classification)
 classification.columns = classification_columns
 

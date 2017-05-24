@@ -7,9 +7,7 @@
 import os
 import sys
 
-scriptpath = "/home/mcardon/Mel/Code/sequana/sequana/"
-sys.path.append(os.path.abspath(scriptpath))
-import pacbio
+from sequana import pacbio
 
 from sequana.lazy import pylab
 from sequana.lazy import pandas as pd
@@ -24,6 +22,11 @@ if filename_output == "show":
 	save_plots = False
 else:
 	save_plots = True
+
+figsize_read_len = (6,4)
+figsize_GC       = (6,4)
+figsize_ZMW      = (6,4)
+figsize_SNR      = (6,4)
 
 ################################ FUNCTIONS ##############################################################################################
 
@@ -53,37 +56,64 @@ for f in list_files:
 
 
 # plot read length
+fig, ax = pylab.subplots(1,1, figsize=figsize_read_len)
 for i in range(len(list_BAM)):
 	bam = list_BAM[i]
-	bam.hist_len(hold=True,label=labels[i])
-pylab.title("Read length")
-pylab.legend()
-pylab.show()
+	bam.hist_len(hold=True,grid=False,label=labels[i],title="")
+ax.legend()
+fig.tight_layout()
+if save_plots:
+	pylab.savefig(filename_output.replace(".","_read_len."), dpi=182)
+	pylab.clf()
+else:
+	pylab.show()
+
 
 # plot GC %
+fig, ax = pylab.subplots(1,1, figsize=figsize_GC)
 for i in range(len(list_BAM)):
 	bam = list_BAM[i]
-	bam.hist_GC(hold=True,label=labels[i])
-pylab.title("GC content")
+	bam.hist_GC(hold=True,label=labels[i],grid=False,title="")
+# pylab.title("GC content")
 pylab.legend()
-pylab.show()
+fig.tight_layout()
+if save_plots:
+	pylab.savefig(filename_output.replace(".","_GC."), dpi=182)
+	pylab.clf()
+else:
+	pylab.show()
 
 # plot ZMW passes
+fig, ax = pylab.subplots(1,1, figsize=figsize_ZMW)
 for i in range(len(list_BAM)):
 	bam = list_BAM[i]
-	bam.hist_ZMW_subreads(hold=True,label=labels[i])
-pylab.title("ZMW passes")
-pylab.legend()
-pylab.show()
+	bam.hist_ZMW_subreads(hold=True,label=labels[i],title="",grid=False,xlabel="Number of passes")
+	pylab.xlim([0,45])
+
+	pylab.legend()
+	fig.tight_layout()
+	if save_plots:
+		pylab.savefig(filename_output.replace(".","_ZMW_%d."%i), dpi=182)
+		pylab.clf()
+	else:
+		pylab.show()
+
 
 # plot snr
 for i in range(len(list_BAM)):
 	bam = list_BAM[i]
 	# plot read length
-	bam.hist_snr()
-	pylab.title("SNR %s" %labels[i])
+	fig, ax = pylab.subplots(1,1, figsize=figsize_SNR)
+	bam.hist_snr(grid=False,title="")
+	pylab.xlim([3,16])
+	# pylab.title("SNR %s" %labels[i])
 	pylab.legend()
-	pylab.show()
+	fig.tight_layout()
+	if save_plots:
+		pylab.savefig(filename_output.replace(".","_SNR_%d." %i), dpi=182)
+		pylab.clf()
+	else:
+		pylab.show()
 
 
 

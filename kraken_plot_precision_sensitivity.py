@@ -7,7 +7,7 @@
 
 # columns of input csv files must contain :
 # "good_classification_at_level","wrong_classification_at_level","unknown_taxon_at_level",
-# "good_classification_above_level","wrong_classification_above_level","unknown_taxon_above_level","Unclassified"
+# "good_classification_above_level","wrong_classification_above_level","unknown_taxon_above_level","Unclassified","total_N_reads"
 
 # edit parameters for custom plots
 
@@ -34,13 +34,15 @@ y_label = "%s Sensitivity"%level_tax
 
 manual_scale = True
 if manual_scale:
-	xlim = [0.995,1.]
-	ylim = [0.33,1.]
+	xlim = [0.86,1.]
+	ylim = [0.,1.]
 
-colors = ["b","b","b","b","b","b","k","k","k","k","r"]
-marker = ["o","o","o","o","o","o","o","X",".","s","X"]
+# colors = ["b","k","r","g","y","m","c"]
+# colors = ["k","r","g","y","m","c"]
+colors = ["r","g","y","m","c"]
+marker = ["o","o","o","o","o","o","o"]
 
-
+loc_label = 3
 ################################ INPUT DATA ##############################################################################################
 
 # list of input files
@@ -58,35 +60,68 @@ f.close()
 
 
 
-pylab.figure(figsize=(5, 5))
+
+#pylab.figure(figsize=(5, 5))
+fig1, ax1 = pylab.subplots(1,1, figsize=(5, 5))
+fig2, ax2 = pylab.subplots(1,1, figsize=(5, 5))
+
+res_PS = []
 
 for i in range(len(list_input)):
 	df = pd.read_csv(list_input[i])
+
+	##### Precision without unknown taxons
 	good_class_rank = df["good_classification_at_level"].sum()
 	tot_class_rank = df["good_classification_at_level"].sum() + df["wrong_classification_at_level"].sum()
-	tot = df["Unclassified"].sum() + tot_class_rank + df["unknown_taxon_at_level"].sum()
-	#print(tot_class_rank)
+	tot = df["total_N_reads"].sum()
 	wrong_class_above = df["wrong_classification_above_level"].sum()
-	#s = good_class_rank / float(tot_class_rank)
+
+	##### Precision without unknown taxons
+	# some reads are classified but we dont find any info : cannot ignore them
+	# wrong_class_above_u = df["wrong_classification_above_level"].sum() + df["unknown_taxon_above_level"].sum()
+	# wrong_not_output = tot - (tot_class_rank + df["good_classification_above_level"].sum() + wrong_class_above_u )
+	# wrong_class_above_u += wrong_not_output
+
+	wrong_class_above_u = tot - (good_class_rank + df["good_classification_above_level"].sum() + df["Unclassified"].sum())
 	s = good_class_rank / float(tot)
 	p = good_class_rank / float(tot_class_rank + wrong_class_above)
-	print("%s : Precision = %f, Sensitivity = %f" %(list_labels[i], p, s))
-	pylab.plot(p,s,colors[i]+marker[i],label=list_labels[i])
+	p_u = good_class_rank / float(tot_class_rank + wrong_class_above_u)
+	print("%s : Precision = %f, Precision with unknowns = %f, Sensitivity = %f" %(list_labels[i], p, p_u, s))
+	ax1.plot(p,s,colors[i]+marker[i],label=list_labels[i])
+	ax2.plot(p_u,s,colors[i]+marker[i],label=list_labels[i])
+	res_PS.append([list_labels[i], s, p, p_u])
 
 
-pylab.title(title_plot)
-pylab.legend(loc=2)
+fig1.suptitle(title_plot)
+fig2.suptitle(title_plot)
+ax1.legend(loc=loc_label)
+ax2.legend(loc=loc_label)
+
 if manual_scale:
-	pylab.xlim(xlim)
-	pylab.ylim(ylim)
-pylab.xlabel(x_label)
-pylab.ylabel(y_label)
+	ax1.set_xlim(xlim)
+	ax1.set_ylim(ylim)
+	ax2.set_xlim(xlim)
+	ax2.set_ylim(ylim)
+
+ax1.set_xlabel(x_label)
+ax1.set_ylabel(y_label)
+ax2.set_xlabel(x_label)
+ax2.set_ylabel(y_label)
+
+fig1.tight_layout()
+fig1.subplots_adjust(top=0.92)
+fig2.tight_layout()
+fig2.subplots_adjust(top=0.92)
+
 if save_plot:
-	pylab.savefig(filename_plot)
+	fig1.savefig(filename_plot.replace(".png","") + "_without_unknown.png")
+	fig2.savefig(filename_plot.replace(".png","") + "_with_unknown.png")
+	df_res_PS = pd.DataFrame(res_PS)
+	df_res_PS.columns = ["label","sensitivity","precision","precison_with_unknown"]
+	df_res_PS.to_csv(filename_plot.replace(".png","") + "_data.csv",index=None)
 else:
-	pylab.show()
-
-
+	fig1.show()
+	fig2.show()
 
 
 
