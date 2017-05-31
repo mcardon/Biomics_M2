@@ -44,13 +44,13 @@ if len(sys.argv) > 0:
 
 
 # step to plot genome
-step = 500000
+step = 200000
 
 # lenght threshold for repeated sequence
 threshold = 100
 
 # prefix name plots
-dir_save = "/home/mcardon/Mel/Datas/2017_02_27_shustring/"
+dir_save = "/home/mcardon/Mel/Rapport/Figures/"
 figname_cov     = dir_save + "Coverage_plot_rep" +str(threshold)
 figname_hist2D  = dir_save + "Hist2D_cov_repeat_rep" +str(threshold)
 figname_boxplot = dir_save + "Boxplot_cov_repeat_len_rep" +str(threshold)
@@ -62,12 +62,12 @@ fontsize = 12
 ################################ LOAD DATA ################################################################################################
 
 # ref genome shustring (output without header)
-genom_ref = pd.read_csv("/home/mcardon/Mel/Datas/Ref_genome_NC/NC_002929_shustring_nohead.out",header=None,sep="\s+")
+genom_ref = pd.read_csv("/home/mcardon/Mel/Datas/Ref_genome_NC_002929/NC_002929_shustring_nohead.out",header=None,sep="\s+")
 
 # bed files wit coverage data
-cov_pacbio_blasr = pd.read_csv("/home/mcardon/Mel/Datas/Ref_genome_NC/cov_pacbio_blasr_mapq100.bed",header=None,sep="\s+")
-cov_pacbio_bwa = pd.read_csv("/home/mcardon/Mel/Datas/Ref_genome_NC/cov_pacbio_bwa_mem_mapq30.bed",header=None,sep="\s+")
-cov_illumina = pd.read_csv("/home/mcardon/Mel/Datas/Ref_genome_NC/cov_illumina_mapq30.bed",header=None,sep="\s+")
+cov_pacbio_blasr = pd.read_csv("/home/mcardon/Mel/Datas/Ref_genome_NC_002929/cov_pacbio_blasr_mapq100.bed",header=None,sep="\s+")
+cov_pacbio_bwa = pd.read_csv("/home/mcardon/Mel/Datas/Ref_genome_NC_002929/cov_pacbio_bwa_mem_mapq30.bed",header=None,sep="\s+")
+cov_illumina = pd.read_csv("/home/mcardon/Mel/Datas/Ref_genome_NC_002929/cov_illumina_mapq30.bed",header=None,sep="\s+")
 
 print("Data loaded")
 
@@ -172,7 +172,7 @@ def step_repeat_len(genom_ref, threshold):
 	e = 0
 
 	# use list because much faster
-	list_len_shus = list(genom_ref[1][i])
+	list_len_shus = list(genom_ref[1])#[i]
 
 	while(i < nb_row):
 		# begining of repeat
@@ -242,18 +242,18 @@ if do_coverage_plot:
 
 		pylab.close('all')
 		# create figure
-		fig, axarr = pylab.subplots(4,1, sharex=True, figsize=(step*0.00004, 8))
+		fig, axarr = pylab.subplots(4,1, sharex=True, figsize=(step*0.00008, 5))
 
 		#ax = pylab.subplot(411, sharex=True)
 		axarr[0].set_title("Coverage Illumina with bwa mem (mapq >30)")
-		axarr[0].plot(cov_illumina[2][i:i_end])
+		axarr[0].plot(cov_illumina[2][i:i_end],lw=0.7)
 		
 		#axarr = pylab.subplot(412, sharex=True)
-		axarr[1].plot(cov_pacbio_bwa[2][i:i_end])
+		axarr[1].plot(cov_pacbio_bwa[2][i:i_end],lw=0.3)
 		axarr[1].set_title("Coverage Pacbio with bwa mem (mapq > 30)")
 
 		#axarr = pylab.subplot(413, sharex=True)
-		axarr[2].plot(cov_pacbio_blasr[2][i:i_end])
+		axarr[2].plot(cov_pacbio_blasr[2][i:i_end],lw=0.3)
 		axarr[2].set_title("Coverage Pacbio with blasr (mapq > 100)")
 
 		#axarr = pylab.subplot(414, sharex=True)
