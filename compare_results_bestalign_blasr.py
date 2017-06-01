@@ -46,6 +46,8 @@ if len(sys.argv) > 4:
 	save_not_covered = True
 
 len_genome = 4086189
+figsize = (15,2)
+
 
 ################################ IMPORT DATA ##############################################################################################
 
@@ -125,7 +127,7 @@ def plot_contigs(res_best, ax, mode="score"):
 		list_contigs.append([start,end])
 		# choose y postion
 		if mode == "score":
-			score = float(res_to_plot["score_norm"])
+			score = float(res_to_plot["score_norm"]/float(-5))
 			ax.plot([start, end],[score]*2, ls='-', lw=5, color=colors[i], solid_capstyle="butt" )
 		else:
 			ax.plot([start, end],[y[i]]*2, ls='-', lw=5, color=colors[i], solid_capstyle="butt" )
@@ -217,7 +219,7 @@ if do_plot:
 	else:
 		pylab.show()
 
-	fig, axarr = pylab.subplots(2,figsize=(15,8), sharex=True)
+	fig, axarr = pylab.subplots(2,figsize=figsize, sharex=True)
 	fig.suptitle("Coverage by contigs (blasr)\n%s" % title_plot, fontsize=10)
 	# plot coverage found by blasr, with score
 	ax = axarr[0]
@@ -232,13 +234,13 @@ if do_plot:
 	ax = axarr[1]
 	list_contigs = plot_contigs(res_best, ax, mode="random")
 	for area in genome_not_covered:
-		ax.axvspan(area[0],area[1], alpha=0.1, color='k')
+		ax.axvspan(area[0],area[1], alpha=0.05, color='k')
 
 	ax.set_ylabel("Random")
 	ax.set_xlabel("Reference genome position")
 
 	fig.subplots_adjust(bottom=0.2,top=0.8)
-	#fig.tight_layout()
+	# fig.tight_layout()
 	if save_plot:
 		pylab.savefig(file_plot)
 	else:

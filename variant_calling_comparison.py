@@ -27,10 +27,19 @@ file_fig = str(sys.argv[4])
 threshold = 100
 
 # name of result file (withut extension)
-filename_all_results = "2017_04_26_Results_variants_all"
-filename_summary = "2017_04_26_Results_variants_summary"
+filename_all_results = "2017_06_01_Results_variants_all"
+filename_summary = "2017_06_01_Results_variants_summary"
 
-colormap = 'cool'
+# step to plot genome
+step = 520000
+
+# plot params
+fontsize_x = 14
+markersize = 6
+hspace_subplots = 1.2
+xtick_too_close = 15000
+
+colormap = 'gist_rainbow_r'
 
 ################################ FUNCTIONS ################################################################################################
 
@@ -224,7 +233,7 @@ def subplot_variant_position(df_result, i, gen_pos, axarr, analysis_names, y_pos
 	to_pop = []
 	for j in range(1,len(my_xticks[1:len(my_xticks)]),1):
 		t = my_xticks[j]
-		if abs(t - prev_t) < 1000:
+		if abs(t - prev_t) < xtick_too_close:
 			to_append = to_append + "\n " + str(t)
 			prev_t = t
 			to_pop.append(j)
@@ -238,12 +247,12 @@ def subplot_variant_position(df_result, i, gen_pos, axarr, analysis_names, y_pos
 			
 
 	ax.set_xticks(ticks_pos)
-	ax.set_xticklabels(new_my_xticks, fontsize=8)
+	ax.set_xticklabels(new_my_xticks, fontsize=fontsize_x)
 	for j in range(len(analysis_names)):
 		analysis = analysis_names[j]
 		df = df_to_plot.dropna(axis=0, how='all', subset=[analysis])
 		if analysis == 'Illumina':
-			ax.plot(df['position'], [y_pos[j+1]]*df.shape[0], 'ks',markersize=8, label=analysis)
+			ax.plot(df['position'], [y_pos[j+1]]*df.shape[0], 'ks',markersize=markersize, label=analysis)
 		else:
 			ax.plot(df['position'], [y_pos[j+1]]*df.shape[0], color=y_col[j], marker='o', linestyle='None', label=analysis )
 	# highlight repeated regions
@@ -498,7 +507,6 @@ summary_variants.to_csv(filename_summary + ".csv")
 
 
 print("Create plots")
-step = 250000
 #colors = ['m','r','y','g','b','c','k']
 
 cmap = pylab.cm.get_cmap(colormap)
@@ -512,7 +520,7 @@ y_col = [cmap(i) for i in np.linspace(0,1,len(analysis_names)) ]
 pylab.close('all')
 
 # create figure
-fig, axarr = pylab.subplots(len(gen_pos),1, figsize=(int(step/10000), int(len(gen_pos))*2))
+fig, axarr = pylab.subplots(len(gen_pos),1, figsize=(int(step/20000), int(len(gen_pos))*1.1))
 for i in range(len(gen_pos)):
 	subplot_variant_position(df_result, i, gen_pos, axarr, analysis_names, y_pos, y_col, be_repeats_concat)
 
@@ -522,7 +530,7 @@ ax.axvspan(len_genome,gen_pos[-1][1], alpha=0.5, color='k')
 
 #fig.subplots_adjust(bottom=0.2)
 #fig.tight_layout()
-pylab.subplots_adjust(hspace = 1)
+pylab.subplots_adjust(hspace = hspace_subplots)
 pylab.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
 #pylab.legend(loc="lower left")
 if file_fig != "show":
