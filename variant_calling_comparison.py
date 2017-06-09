@@ -31,7 +31,7 @@ filename_all_results = "2017_06_01_Results_variants_all"
 filename_summary = "2017_06_01_Results_variants_summary"
 
 # step to plot genome
-step = 520000
+step = 4000000
 
 # plot params
 fontsize_x = 14
@@ -39,7 +39,17 @@ markersize = 6
 hspace_subplots = 1.2
 xtick_too_close = 15000
 
-colormap = 'gist_rainbow_r'
+colormap = 'nipy_spectral_r'
+# colormap = 'gist_rainbow_r'
+# custom colors
+custom_colors = True
+# colors = ['k','r','b','g','b','c','k']
+# colors =  ["#ff2d00","#ff2d00","#ff2d00","#ff2d00","#ccf900","#ccf900","#ccf900",\
+# "#00ba00","#00ba00","#00ba00","#00a4bb","#00a4bb","#00a4bb",\
+# "#0000b9","#0000b9","#0000b9","#000000","#000000","#000000"]
+
+colors =  ["#ff2d00","#ff2d00","#ccf900","#00ba00","#00a4bb","#0000b9","#000000"]
+
 
 ################################ FUNCTIONS ################################################################################################
 
@@ -515,7 +525,11 @@ cmap = pylab.cm.get_cmap(colormap)
 # positions of genome
 gen_pos = [[i, i+step-1] for i in range(0,len_genome,step)]
 y_pos = list(np.linspace(0,1,len(analysis_names)+2))
-y_col = [cmap(i) for i in np.linspace(0,1,len(analysis_names)) ]
+
+if custom_colors:
+	y_col = [colors[i] for i in range(len(analysis_names))]
+else:
+	y_col = [cmap(i) for i in np.linspace(0,1,len(analysis_names)) ]
 
 pylab.close('all')
 
