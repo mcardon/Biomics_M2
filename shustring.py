@@ -242,7 +242,7 @@ if do_coverage_plot:
 
 		pylab.close('all')
 		# create figure
-		fig, axarr = pylab.subplots(4,1, sharex=True, figsize=(step*0.00008, 5))
+		fig, axarr = pylab.subplots(4,1, sharex=True, figsize=(step*0.00008, 7))
 
 		#ax = pylab.subplot(411, sharex=True)
 		axarr[0].set_title("Coverage Illumina with bwa mem (mapq >30)")

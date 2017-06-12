@@ -16,7 +16,7 @@ filename_output = str(sys.argv[2])
 fontsize = 16
 pylab.rcParams['font.size'] = 8
 nb_row = 2
-nb_col = 5
+nb_col = 3
 
 colors = ["#6fcfcf","#cf9f6f","#cf6f6f"]
 
