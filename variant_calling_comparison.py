@@ -31,7 +31,7 @@ filename_all_results = "2017_06_01_Results_variants_all"
 filename_summary = "2017_06_01_Results_variants_summary"
 
 # step to plot genome
-step = 4000000
+step = 200000
 
 # plot params
 fontsize_x = 14
@@ -48,7 +48,7 @@ custom_colors = True
 # "#00ba00","#00ba00","#00ba00","#00a4bb","#00a4bb","#00a4bb",\
 # "#0000b9","#0000b9","#0000b9","#000000","#000000","#000000"]
 
-colors =  ["#ff2d00","#ff2d00","#ccf900","#00ba00","#00a4bb","#0000b9","#000000"]
+colors =  ["#ff0000","#ff0000","#005a9a","#00ba00","#00a4bb","#0000b9","#000000"]
 
 
 ################################ FUNCTIONS ################################################################################################

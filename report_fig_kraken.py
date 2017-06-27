@@ -21,11 +21,13 @@ colors = ["y","c","b","g","r","m","c"]
 # colors = ["k","r","g","y","m","c"]
 
 ## marker for line style
-marker = ["--","--","--","--","--","o","o"]
+marker = ["v","v","v","v","v","o","o"]
 
 marker_kmer_size = False
 # if False, specify markers here for kmer size
-marker_kmer = ["o","X","s","D","v","*","p"]
+#marker_kmer = ["o","X","s","D","v","*","p"]
+marker_kmer = ["."]
+size_marker = 60
 
 loc_label = 3
 alpha = 0.6
@@ -35,7 +37,7 @@ if manual_scale:
 	ylim = [0.45,1.]
 
 
-min_kmer_size = 16
+min_kmer_size = 30
 level_tax = "Genus"
 x_label = "%s Precision" %level_tax
 y_label = "%s Sensitivity"%level_tax
@@ -85,20 +87,22 @@ if marker_kmer_size:
 
 	## plot markers as kmer length
 	all_kmer = df["kmer_size"].unique()
+	
 	for kmer in all_kmer:
 		df_to_plot = df[df["kmer_size"] == kmer]
 		p = df_to_plot["precison_with_unknown"]
 		s = df_to_plot["sensitivity"]
-		ax1.scatter(p, s, s=100, c="k", marker=r"$ {} $".format(kmer), edgecolors='none' )
+		ax1.scatter(p, s, s=size_marker, c="k", marker=r"$ {} $".format(kmer), edgecolors='none' )
+		
 else:
 	## plot regular markers (see parameters)
 	all_kmer = list(df["kmer_size"].unique())
-	for i in range(len(all_kmer)):
-		kmer = 	all_kmer[i]
-		df_to_plot = df[df["kmer_size"] == kmer]
-		p = df_to_plot["precison_with_unknown"]
-		s = df_to_plot["sensitivity"]
-		ax1.scatter(p, s, s=20, c="k", marker=marker_kmer[i], label=str(kmer)+"-mer",edgecolors='none',alpha=alpha )
+	# for i in range(len(all_kmer)):
+	# 	kmer = 	all_kmer[i]
+	# 	df_to_plot = df[df["kmer_size"] == kmer]
+	# 	p = df_to_plot["precison_with_unknown"]
+	# 	s = df_to_plot["sensitivity"]
+	# 	ax1.scatter(p, s, s=size_marker, c="k", marker=marker_kmer[i], label=str(kmer)+"-mer",edgecolors='none',alpha=alpha )
 	# plot legend after
 	ax1.legend(loc=loc_label)
 

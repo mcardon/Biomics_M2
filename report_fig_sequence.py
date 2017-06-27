@@ -31,10 +31,10 @@ do_rep_histogram = False
 do_FFT = False
 
 M = 2000 # param fft
-alpha = 0.5
-figsize = (8,10)
+alpha = 0.8
+figsize = (15,10)
 fontsize = 16
-title = "Bordetella Bronseptica genome"
+title = "Bordetella Pertussis genome"
 
 ################################ EXECUTE ##############################################################################################
 
@@ -70,14 +70,14 @@ if do_skew:
 	############ GC skew
 	axarr[0].plot(x, (seq.AT_skew).T, 'b-', alpha=alpha)
 	for repeat in rep.begin_end_repeat_position:
-		axarr[0].axvspan(repeat[0], repeat[1], alpha=0.1, color='black')
+		axarr[0].axvspan(repeat[0], repeat[1], alpha=0.3, color='black')
 	# Make the y-axis label, ticks and tick labels match the line color.
 	axarr[0].set_ylabel('AT skew', color='k', fontsize=fontsize)
 
 	ax2 = axarr[0].twinx()
 	ax2.plot(x, ((seq.AT_skew).T).cumsum(), 'b--', alpha=alpha)
 	for repeat in rep.begin_end_repeat_position:
-		axarr[1].axvspan(repeat[0], repeat[1], alpha=0.1, color='black')
+		axarr[1].axvspan(repeat[0], repeat[1], alpha=0.3, color='black')
 	ax2.set_ylabel('AT skew\n(cumulative)', color='k',fontsize=fontsize)
 
 	############ AT skew
